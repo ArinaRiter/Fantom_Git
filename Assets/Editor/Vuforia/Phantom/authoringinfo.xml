@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<QCARInfo>
+    <TargetSet version="36.0" toolVersion="v7.2.0">
+        <ModelTarget name="Phantom" targetId="106339481c514d4e8a8fdc5623085c14" version="14.0" toolVersion="v7.2.0" bbox="-0.094872 -0.136599 -0.101309 0.097482 0.001299 0.098658" trackingMode="car" upVector="0.0 -1.0 0.0" optimizeTrackingFor="default" realisticTextures="no" />
+    </TargetSet>
+    <Assembly name="Phantom" assemblyId="7915f6985ec244948f6d6298a31c4bb2">
+        <Part name="Phantom" translation="0 0 0" rotation="AD: 0 0 1 0" />
+        <EntryPoint name="(none)" trained="yes" />
+    </Assembly>
+</QCARInfo>
