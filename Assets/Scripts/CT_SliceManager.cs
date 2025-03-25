@@ -6,32 +6,56 @@ using System.Collections.Generic;
 
 public class CT_SliceManager : MonoBehaviour
 {
-    public string baseFolderPath = "Assets/CT_Slices/"; // Базовая папка
-    public Renderer planeRenderer;  // Рендерер плоскости
-    public Slider sliceSlider; // Ползунок для перелистывания срезов
-    public Text axisText; // UI для отображения текущей оси
+    public string baseFolderPath = "Assets/CT_Slices/"; // Базовая папка с КТ-срезами
+    public Renderer planeRenderer; // Рендер плоскости
+    public Transform slicePlane; // Объект плоскости среза
+    public Transform modelTarget; // Родитель (Model Target)
+    public Slider sliceSlider; // Ползунок для переключения срезов
+    public Text axisText; // UI-текст для отображения текущей оси
 
-    public enum Axis { X, Y, Z }    // Выбор оси
+    public enum Axis { X, Y, Z }
     private Axis currentAxis = Axis.Z;
 
     private Dictionary<Axis, List<Texture2D>> sliceTextures = new Dictionary<Axis, List<Texture2D>>();
-    private int currentSliceIndex = 0;
-    private bool isAnimating = false; // Флаг для плавного перехода
+    [SerializeField] private int currentSliceIndex = 0;
+    private bool isAnimating = false;
+    private Vector3 initialLocalPosition;
 
     void Start()
     {
-        LoadSlices(Axis.X, "X");
-        LoadSlices(Axis.Y, "Y");
-        LoadSlices(Axis.Z, "Z");
+        LoadSlices(Axis.X, "X_Axis");
+        LoadSlices(Axis.Y, "Y_Axis");
+        LoadSlices(Axis.Z, "Z_Axis");
 
-        UpdateTexture(); // Установим начальную текстуру
-        UpdateUI(); // Обновляем UI
+        initialLocalPosition = slicePlane.localPosition; // Запоминаем начальное положение
+        UpdateTexture();
+        UpdateUI();
+    }
+
+    private void Update()
+    {
+        UpdateTexture();
+        UpdatePlanePosition();
     }
 
     void LoadSlices(Axis axis, string folderName)
     {
         string folderPath = Path.Combine(baseFolderPath, folderName);
-        string[] files = Directory.GetFiles(folderPath, "*.png");
+        if (!Directory.Exists(folderPath))
+        {
+            Debug.LogWarning($"Папка {folderPath} не найдена!");
+            return;
+        }
+
+        string[] files = Directory.GetFiles(folderPath, "image_*.png");
+
+        // Сортировка по числовому значению
+        System.Array.Sort(files, (a, b) =>
+        {
+            int numA = int.Parse(Path.GetFileNameWithoutExtension(a).Split('_')[1]);
+            int numB = int.Parse(Path.GetFileNameWithoutExtension(b).Split('_')[1]);
+            return numA.CompareTo(numB);
+        });
 
         List<Texture2D> textures = new List<Texture2D>();
         foreach (string file in files)
@@ -65,6 +89,7 @@ public class CT_SliceManager : MonoBehaviour
         {
             currentSliceIndex = newIndex;
             StartCoroutine(FadeTexture(sliceTextures[currentAxis][currentSliceIndex]));
+            UpdatePlanePosition();
         }
     }
 
@@ -78,7 +103,6 @@ public class CT_SliceManager : MonoBehaviour
         float elapsedTime = 0f;
         Color color = mat.color;
 
-        // Исчезновение
         while (elapsedTime < duration)
         {
             color.a = Mathf.Lerp(1, 0, elapsedTime / duration);
@@ -87,10 +111,8 @@ public class CT_SliceManager : MonoBehaviour
             yield return null;
         }
 
-        // Смена текстуры
         mat.mainTexture = newTexture;
 
-        // Появление
         elapsedTime = 0f;
         while (elapsedTime < duration)
         {
@@ -101,6 +123,18 @@ public class CT_SliceManager : MonoBehaviour
         }
 
         isAnimating = false;
+    }
+
+    void UpdatePlanePosition()
+    {
+        float step = 0.002f; // Расстояние между срезами
+
+        Vector3 offset = Vector3.zero;
+        if (currentAxis == Axis.X) offset = new Vector3(step * currentSliceIndex, 0, 0);
+        else if (currentAxis == Axis.Y) offset = new Vector3(0, step * currentSliceIndex, 0);
+        else if (currentAxis == Axis.Z) offset = new Vector3(0, 0, step * currentSliceIndex);
+
+        slicePlane.localPosition = initialLocalPosition + offset;
     }
 
     public void SetAxis(string axis)
@@ -114,6 +148,7 @@ public class CT_SliceManager : MonoBehaviour
         sliceSlider.value = 0;
         UpdateTexture();
         UpdateUI();
+        UpdatePlanePosition();
     }
 
     void UpdateTexture()
@@ -130,4 +165,3 @@ public class CT_SliceManager : MonoBehaviour
             axisText.text = "Ось: " + currentAxis.ToString();
     }
 }
-
